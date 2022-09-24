@@ -1,5 +1,6 @@
 import * as Logger from './logger.js';
 
+// This needs to be added here to make sure that when creating folder name we are not adding characters allowed by foundry naming but not allowed by file system like :  this is probably a little extra overboard
 export function makeStringSafe(dirtyThing){
     var safeString = String(dirtyThing).replace(/[:".!*+?&^$<>{}()@/|[\]\\]/g,"");
     //console.log(safeString);

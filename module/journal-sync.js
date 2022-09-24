@@ -391,54 +391,6 @@ async function importFile(file) {
     });
 }
 
-async function exportFolder(folder, parentPath) {
-
-
-    //console.log(folder.name);
-    let folderPath = (parentPath + '/' + await makeStringSafe(folder.name)).replace("//", "/").trim();
-    let testingthing = (parentPath + '/' + await makeStringSafe(folder.name) + '/'+ 'extralong').replace("//", "/").trim();
-    //console.log(folderPath);
-    // Create folder directory on server. 
-    // Try and create parent path before child, have to catch error 
-    // as no way to check for folder existance that I saw.
-    //console.log(markdownPathOptions.activeSource);
-    FilePicker.createDirectory(markdownPathOptions.activeSource, parentPath)
-        .then((result) => {
-            Logger.log(`Creating Parent: ${parentPath}`);
-        })
-        .catch((error) => {
-            if (!error.includes("EEXIST")) {
-                Logger.log(error);
-            } else {
-                Logger.log(`${parentPath} exists`);
-            }
-        });
-    /*
-    FilePicker.createDirectory(markdownPathOptions.activeSource, folderPath)
-        .then((result) => {
-            Logger.log(`Creating Folder: ${folderPath}`);
-            folder.content.forEach(journalEntry => {
-                exportJournal(journalEntry, folderPath);
-            });
-        })
-        .catch((error) => {
-            if (!error.includes("EEXIST")) {
-                Logger.log(error);
-            } else {
-                Logger.log(`${folderPath} exists`);
-                folder.content.forEach(journalEntry => {
-                    exportJournal(journalEntry, folderPath);
-                });
-            }
-        });
-    */
-
-    // Recurse for any sub folders. 
-    folder.children.forEach(folderEntity => {
-        exportFolder(folderEntity, folderPath);
-    });
-}
-
 async function exportJournal(journalEntry, parentPath) {
     if (skippedJournalEntries.includes(journalEntry.name) || skippedJournalFolders.includes(last(parentPath.split('/')))) {
         Logger.log(`Skipping ${journalEntry.name} as it matches exclusion rules`)
@@ -473,27 +425,4 @@ async function exportJournal(journalEntry, parentPath) {
         .catch((error) => {
             Logger.log(error);
         });
-}
-
-async function createFolderTree(dataset) {
-    console.log(dataset);
-    let hashTable = Object.create(null);
-    let dataTree = [];
-    dataset.forEach(folderEntity => hashTable[folderEntity.id] = { ...folderEntity, childNodes: [] });
-
-    dataset.forEach(folderEntity => {
-        if (folderEntity.parent) {
-            hashTable[folderEntity.parent.id].childNodes.push(hashTable[folderEntity.id]);
-        } else {
-            dataTree.push(hashTable[folderEntity.id]);
-        }
-    })
-    return dataTree;
-}
-
-// This needs to be added here to make sure that when creating folder name we are not adding characters allowed by foundry naming but not allowed by file system like :  this is probably a little extra overboard
-async function makeStringSafe(dirtyThing){
-    let safeString = String(dirtyThing).replace(/[:".!*+?&^$<>{}()@/|[\]\\]/g,"");
-    //console.log(safefilename);
-    return safeString;
 }
