@@ -5,7 +5,7 @@ import { fetchParams } from "./journal-sync.js"
 /**
  * The module title
  */
-export const title = "Journal Sync settings";
+export const title = "Better Markdown Sync";
 
 /**
  * Some generic path references that might be useful later in the application's windows
@@ -35,8 +35,9 @@ const settings = [
   {
     name: "MarkdownSourcePath",
     scope: "world",
-    default: "journal-sync/",
+    default: "fvtt-md-vault/",
     type: String,
+    requiresreload: false,
     onChange: fetchParams
   },
   {
@@ -51,6 +52,7 @@ const settings = [
     scope: "world",
     default: false,
     type: Boolean,
+    requiresreload: false,
     onChange: fetchParams
   },
   {
@@ -58,6 +60,7 @@ const settings = [
     scope: "world",
     default: "",
     type: String,
+    requiresreload: false,
     onChange: fetchParams
   },
   {
@@ -65,6 +68,7 @@ const settings = [
     scope: "world",
     default: "",
     type: String,
+    requiresreload: false,
     onChange: fetchParams
   },
   {
@@ -72,6 +76,7 @@ const settings = [
     scope: "world",
     default: "",
     type: String,
+    requiresreload: false,
     onChange: fetchParams
   },
   {
@@ -79,8 +84,17 @@ const settings = [
     scope: "world",
     default: "",
     type: String,
+    requiresreload: false,
     onChange: fetchParams
-  },  
+  },
+  {
+    name: "ShowButtonTop",
+    scope: "world",
+    default: true,
+    type: Boolean,
+    requiresreload: true,
+    onChange: fetchParams
+  }
 ]
 
 export async function registerSettings() {
@@ -92,6 +106,7 @@ export async function registerSettings() {
       config: true,
       default: setting.default,
       type: setting.type,
+      requiresreload: setting.requiresreload,
       onChange: setting.onChange
     };
     if (setting.choices) options.choices = setting.choices;

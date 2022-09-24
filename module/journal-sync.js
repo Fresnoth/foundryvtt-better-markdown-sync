@@ -1,6 +1,7 @@
 "use strict";
 import * as Constants from "./constants.js"
 import * as Logger from './logger.js'
+import { generateFolderStringsMap, exportFolderPath } from './folder-utils.js'
 
 let markdownPathOptions, markdownSourcePath, journalEditorLink, importWorldPath, exportWorldPath;
 let enableTracing = false;
@@ -207,34 +208,44 @@ async function startImport() {
 }
 
 async function startExport() {
-    let journalFolders = await createFolderTree(game.folders.filter(f => (f.data.type === "JournalEntry") && f.displayed))
+    let something = await game.folders.filter(f => (f.depth === 1) && f.displayed);
+    let folder_map = generateFolderStringsMap(something);
+    Logger.log(folder_map);
+    
+    game.folders.forEach(folder => {
+        exportFolderPath(folder, validMarkdownSourcePath()+validExportWorldPath(),folder_map, markdownPathOptions);
+    });
 
+    /*
+    let journalFolders = await createFolderTree(game.folders.filter(f => (f.type === "JournalEntry") && f.displayed))
+        console.log(journalFolders);
     journalFolders.forEach(folderEntity => {
+        console.log("im in here");
         exportFolder(folderEntity, validMarkdownSourcePath()+validExportWorldPath());
     });
 
-    game.journal.filter(f => (f.data.folder === "")).forEach((value, key, map) => {
-        Logger.logTrace(`m[${key}] = ${value.data.name} - ${value.data.folder} - ${value.data.type}`);
-        exportJournal(value, validMarkdownSourcePath()+validExportWorldPath());
-    });
+    game.journal.filter(f => (f.folder === "")).forEach((value, key, map) => {
+        Logger.logTrace(`m[${key}] = ${value.name} - ${value.folder} - ${value.type}`);
+        //exportJournal(value, validMarkdownSourcePath()+validExportWorldPath());
+    });*/
     ui.notifications.info("Export completed");
 }
 
 function validMarkdownSourcePath() {
     let validMarkdownSourcePath = markdownSourcePath.replace("\\", "/");
     validMarkdownSourcePath += validMarkdownSourcePath.endsWith("/") ? "" : "/";
-//  validMarkdownSourcePath += game.world.name + "/";
+//  validMarkdownSourcePath += game.world.name + "/"; -- 
     return validMarkdownSourcePath;
 }
 
 function validImportWorldPath() {
-    let validImportWorldPath = importWorldPath == "" ? (game.world.name + "/") : importWorldPath;
+    let validImportWorldPath = importWorldPath == "" ? (game.world.id + "/") : importWorldPath;
     validImportWorldPath += validImportWorldPath.endsWith("/") ? "" : "/";
     return validImportWorldPath;
 }
 
 function validExportWorldPath() {
-    let validExportWorldPath = exportWorldPath == "" ? (game.world.name + "/") : exportWorldPath;
+    let validExportWorldPath = exportWorldPath == "" ? (game.world.id + "/") : exportWorldPath;
     validExportWorldPath += validExportWorldPath.endsWith("/") ? "" : "/";
     return validExportWorldPath;
 }
@@ -381,14 +392,19 @@ async function importFile(file) {
 }
 
 async function exportFolder(folder, parentPath) {
-    let folderPath = (parentPath + '/' + folder.data.name).replace("//", "/").trim();
 
+
+    //console.log(folder.name);
+    let folderPath = (parentPath + '/' + await makeStringSafe(folder.name)).replace("//", "/").trim();
+    let testingthing = (parentPath + '/' + await makeStringSafe(folder.name) + '/'+ 'extralong').replace("//", "/").trim();
+    //console.log(folderPath);
     // Create folder directory on server. 
     // Try and create parent path before child, have to catch error 
     // as no way to check for folder existance that I saw.
+    //console.log(markdownPathOptions.activeSource);
     FilePicker.createDirectory(markdownPathOptions.activeSource, parentPath)
         .then((result) => {
-            Logger.log(`Creating ${parentPath}`);
+            Logger.log(`Creating Parent: ${parentPath}`);
         })
         .catch((error) => {
             if (!error.includes("EEXIST")) {
@@ -397,10 +413,10 @@ async function exportFolder(folder, parentPath) {
                 Logger.log(`${parentPath} exists`);
             }
         });
-
+    /*
     FilePicker.createDirectory(markdownPathOptions.activeSource, folderPath)
         .then((result) => {
-            Logger.log(`Creating ${folderPath}`);
+            Logger.log(`Creating Folder: ${folderPath}`);
             folder.content.forEach(journalEntry => {
                 exportJournal(journalEntry, folderPath);
             });
@@ -415,7 +431,7 @@ async function exportFolder(folder, parentPath) {
                 });
             }
         });
-
+    */
 
     // Recurse for any sub folders. 
     folder.children.forEach(folderEntity => {
@@ -460,6 +476,7 @@ async function exportJournal(journalEntry, parentPath) {
 }
 
 async function createFolderTree(dataset) {
+    console.log(dataset);
     let hashTable = Object.create(null);
     let dataTree = [];
     dataset.forEach(folderEntity => hashTable[folderEntity.id] = { ...folderEntity, childNodes: [] });
@@ -474,3 +491,9 @@ async function createFolderTree(dataset) {
     return dataTree;
 }
 
+// This needs to be added here to make sure that when creating folder name we are not adding characters allowed by foundry naming but not allowed by file system like :  this is probably a little extra overboard
+async function makeStringSafe(dirtyThing){
+    let safeString = String(dirtyThing).replace(/[:".!*+?&^$<>{}()@/|[\]\\]/g,"");
+    //console.log(safefilename);
+    return safeString;
+}

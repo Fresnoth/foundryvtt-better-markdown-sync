@@ -1,0 +1,18 @@
+<div>
+    <div>
+      <label>Scene Name</label><input type='text' name="sceneName" />
+    </div>
+    <ul>
+      {{#each folders}}
+      <li>{{this.id}}{{this.name}}</li>
+      {{/each}}
+    </ul>
+    <p> a nice break here</p>
+      <ul>
+      {{#each journals}}
+      <li>{{this._id}}{{this.name}}</li>
+      {{/each}}
+    </ul>
+    <button id="#import-selected">Import Selected</button>
+    <button id="#export-selected">Export Selected</button>
+</div>
