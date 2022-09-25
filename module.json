@@ -27,10 +27,12 @@
   "conflicts": [
   ],
   "esmodules": [
-    "main.js"
+    "main.js",
+    "module/node-html-markdown/dist/main.js"
   ],
   "scripts": [
-    "scripts/showdown.js"
+    "scripts/showdown.js",
+    "scripts/main.js"
   ],
   "styles": [],
   "packs": [],

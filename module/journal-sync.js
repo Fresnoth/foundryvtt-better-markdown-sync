@@ -2,6 +2,7 @@
 import * as Constants from "./constants.js"
 import * as Logger from './logger.js'
 import { generateFolderStringsMap, exportFolderPath } from './folder-utils.js'
+import { journalTesting } from './journal-utils.js'
 
 let markdownPathOptions, markdownSourcePath, journalEditorLink, importWorldPath, exportWorldPath;
 let enableTracing = false;
@@ -165,6 +166,15 @@ export async function readyModule() {
             icon: "fas fa-file-export",
             onClick: () => {
                 startExport();
+            },
+            button: true,
+        });
+        group.tools.push({
+            name: "BMD",
+            title: "BMD TEST",
+            icon: "fas fa-file-export",
+            onClick: () => {
+                journalTesting();
             },
             button: true,
         });

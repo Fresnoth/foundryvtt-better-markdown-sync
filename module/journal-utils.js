@@ -1,4 +1,5 @@
 import * as Logger from './logger.js';
+//import { NodeHtmlMarkdown } from './node-html-markdown/dist/main';
 
 let linkMap = new Map();
 
@@ -9,9 +10,8 @@ export async function prepJournalsExport(){
         console.log(jentry.folder._id)
     });*/
     cleanJounalObj = [];
-
-
 }
+
 
 //This function will take an incoming text string and search for badly formed FVTT links in the format @JournalEntry[SOME TEXT HERE]{Something}
 //The conversion will go thought and put the appropriate FVTT Document ID in for the text between the brackets @JournalEntry[DocumentID]{Something}
@@ -143,9 +143,9 @@ function prepBadHTMLJournalLinks(dirtyJournalContent){
     return newDirtyFile;
 }
 
-
+export async function journalTesting(){
 let journalent = await game.journal.get('jusKa3qmhyxf2sd5');
-journalPageArray = [];
+let journalPageArray = [];
 journalent.pages.forEach(p =>{
     let journalData = {
         jEntryID: journalent._id,
@@ -162,3 +162,18 @@ journalent.pages.forEach(p =>{
 
 let cleanedString = await addJournalLinksIds(journalPageArray[0].htmltext);
 console.log(cleanedString);
+
+let converter = new showdown.Converter({ tables: true, strikethrough: true });
+let md = converter.makeMarkdown(cleanedString);
+console.log(md);
+/*
+let something = bmdhtmlconvert(cleanedString);
+console.log(something);*/
+
+//console.log(NodeHtmlMarkdown.translate(cleanedString));
+}
+
+/*
+var converter = new showdown.Converter({ tables: true, strikethrough: true })
+md = converter.makeHtml(cleanedString);
+*/
