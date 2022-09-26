@@ -2,7 +2,7 @@
 import * as Constants from "./constants.js"
 import * as Logger from './logger.js'
 import { generateFolderStringsMap, exportFolderPath } from './folder-utils.js'
-import { journalTesting } from './journal-utils.js'
+import { journalV10prep, convertFVTTJnlLinksToMDLinks, convertHTMLtoMD, compendiumObjectsToCreate, cleanMDImageLinkPaths, addYAMLFrontMatter } from './journal-utils.js'
 
 let markdownPathOptions, markdownSourcePath, journalEditorLink, importWorldPath, exportWorldPath;
 let enableTracing = false;
@@ -174,7 +174,7 @@ export async function readyModule() {
             title: "BMD TEST",
             icon: "fas fa-file-export",
             onClick: () => {
-                journalTesting();
+                //journalTesting();
             },
             button: true,
         });
@@ -205,6 +205,7 @@ async function startImport() {
         await importFolder(folder);
     }
 
+    
     ui.notifications.info("Import completed");
     // FilePicker.browse(markdownPathOptions.activeSource, validMarkdownSourcePath()).then((result) => {
     //     console.log(result);
@@ -218,14 +219,51 @@ async function startImport() {
 }
 
 async function startExport() {
-    let something = await game.folders.filter(f => (f.depth === 1) && f.displayed);
-    let folder_map = generateFolderStringsMap(something);
+    let allTopLevelFolders = await game.folders.filter(f => (f.depth === 1) && f.displayed);
+    let folder_map = await generateFolderStringsMap(allTopLevelFolders);
     Logger.log(folder_map);
     
+    //may need to tighten this execution to for .. of loop to prevent the rest of everything running ahead?
     game.folders.forEach(folder => {
         exportFolderPath(folder, validMarkdownSourcePath()+validExportWorldPath(),folder_map, markdownPathOptions);
     });
+    
+    let pageArray = await journalV10prep(game.journal.get('jusKa3qmhyxf2sd5'),folder_map);
+    console.log(pageArray);
 
+    let i = 0;
+    while (i < pageArray.length){
+        pageArray[i].markdown = await convertHTMLtoMD(pageArray[i].htmltext);
+        pageArray[i].markdown = await convertFVTTJnlLinksToMDLinks(pageArray[i].markdown,pageArray[i],folder_map);
+        i++;
+    }
+
+    i = 0;
+    while (i < pageArray.length){
+        let cleanererText = await cleanMDImageLinkPaths(pageArray[i].markdown);
+        console.log(cleanererText);
+        i++;
+    }
+
+    for(let i = 0; i < pageArray.length; i++){
+        let someNewText = await addYAMLFrontMatter(pageArray[i].markdown, pageArray[i])
+        console.log(someNewText);
+    }
+
+    console.log(pageArray);
+
+    let blob = new Blob([pageArray[0].markdown], {type: "text/markdown"});
+    let file = new File([blob], pageArray[0].name+'.md', {type: "text/markdown"});
+
+    FilePicker.upload(markdownPathOptions.activeSource, validMarkdownSourcePath()+validExportWorldPath()+pageArray[0].folderPath, file, { bucket: null })
+        .then((result) => {
+            Logger.log(`Uploading ${parentPath}/${pageArray[0].name}`);
+        })
+        .catch((error) => {
+            Logger.log(error);
+        });
+
+    console.log(compendiumObjectsToCreate);
     /*
     let journalFolders = await createFolderTree(game.folders.filter(f => (f.type === "JournalEntry") && f.displayed))
         console.log(journalFolders);

@@ -30,7 +30,7 @@ export const getCleanAncestors = (target, children, ancestors = []) => {
     return undefined;
 };
 
-export function generateFolderStringsMap (tree){
+export async function generateFolderStringsMap (tree){
     let folderMap = new Map();
     game.folders.forEach(folder => {
         //set it to a new key-value in case we want to write it back to the DB later?
