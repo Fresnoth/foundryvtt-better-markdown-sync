@@ -6,9 +6,11 @@
   "version": "0.0.1",
   "library": "false",
   "manifestPlusVersion": "1.0.0",
+  "minimumCoreVersion": "9",
+  "compatibleCoreVersion": "10",
   "compatability": {
-    "minimum": "9",
-    "verified": "10.285"
+    "minimum": 9,
+    "verified": 10
   },
   "authors": [
     {

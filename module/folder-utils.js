@@ -76,3 +76,28 @@ async function folderCreate(parentPath, folderToCreate, markdownPathOptions){
         });
     }
 }
+
+//This takes in an array of compendium UUID objects and will then transfer those to a map with key
+export async function generateCompendiumFoldersMap(compArray){
+    let compendiumMap = new Map();
+    for(let i=0;i<compArray.length;i++){
+        let stringArray = compArray[i].UUID.split('.');
+        compendiumMap.set(stringArray[1]+'.'+stringArray[2],stringArray[0]+'/'+stringArray[1]+'/'+stringArray[2]);
+    }
+    Logger.log(compendiumMap);
+    return compendiumMap;
+}
+
+//This function will take a folder path string, we then split that and send it in a loop down to the actual folder creation function.
+export async function exportFolderPathString(folderPath, parentPath, markdownPathOptions){
+    Logger.log(`Export Folder: ${folderPath}`);
+    let arrayOfFolders = folderPath.split('/');
+    Logger.log(`Export Array: ${arrayOfFolders}`);
+    let i = 0;
+    while(i<arrayOfFolders.length){
+        Logger.log(arrayOfFolders[i]);
+        await folderCreate(parentPath, arrayOfFolders[i],markdownPathOptions);
+        parentPath = parentPath.concat('/',arrayOfFolders[i]).replace("//", "/").trim();
+        i++;
+    }
+}

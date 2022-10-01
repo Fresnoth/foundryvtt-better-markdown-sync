@@ -1,8 +1,9 @@
 "use strict";
 import * as Constants from "./constants.js"
 import * as Logger from './logger.js'
-import { generateFolderStringsMap, exportFolderPath } from './folder-utils.js'
-import { journalV10prep, convertFVTTJnlLinksToMDLinks, convertHTMLtoMD, compendiumObjectsToCreate, cleanMDImageLinkPaths, addYAMLFrontMatter } from './journal-utils.js'
+import { generateFolderStringsMap, exportFolderPath, generateCompendiumFoldersMap, exportFolderPathString } from './folder-utils.js'
+import { journalV10prep, convertFVTTJnlLinksToMDLinks, convertHTMLtoMD, compendiumObjectsToCreate, cleanMDImageLinkPaths, addYAMLFrontMatter, journalV10prepALL, convertFVTTJnlLinksToMDLinksRefactor, addEmbeddedImageFromImgJournal } from './journal-utils.js'
+import { actorPrepBase } from './actor-utils.js'
 
 let markdownPathOptions, markdownSourcePath, journalEditorLink, importWorldPath, exportWorldPath;
 let enableTracing = false;
@@ -174,7 +175,17 @@ export async function readyModule() {
             title: "BMD TEST",
             icon: "fas fa-file-export",
             onClick: () => {
-                //journalTesting();
+                startExportAllJournals();
+            },
+            button: true,
+        });
+
+        group.tools.push({
+            name: "BMDActor",
+            title: "Actor Test",
+            icon: "fas fa-file-export",
+            onClick: () => {
+                startExportActors();
             },
             button: true,
         });
@@ -227,7 +238,7 @@ async function startExport() {
     game.folders.forEach(folder => {
         exportFolderPath(folder, validMarkdownSourcePath()+validExportWorldPath(),folder_map, markdownPathOptions);
     });
-    
+
     let pageArray = await journalV10prep(game.journal.get('jusKa3qmhyxf2sd5'),folder_map);
     console.log(pageArray);
 
@@ -277,6 +288,115 @@ async function startExport() {
         //exportJournal(value, validMarkdownSourcePath()+validExportWorldPath());
     });*/
     ui.notifications.info("Export completed");
+}
+
+async function startExportAllJournals(){
+    let allTopLevelFolders = await game.folders.filter(f => (f.depth === 1) && f.displayed);
+    let folder_map = await generateFolderStringsMap(allTopLevelFolders);
+    Logger.log(folder_map);
+    
+    //may need to tighten this execution to for .. of loop to prevent the rest of everything running ahead?
+    game.folders.forEach(folder => {
+        exportFolderPath(folder, validMarkdownSourcePath()+validExportWorldPath(),folder_map, markdownPathOptions);
+    });
+
+    let pageArray = await journalV10prepALL(folder_map);
+    let imageArray = pageArray.filter(p => (p.type === 'image'));
+    let txtPageArray = pageArray.filter(p => (p.type === 'text'));
+
+    for(let i = 0; i < txtPageArray.length; i++){
+        txtPageArray[i].markdown = await convertHTMLtoMD(txtPageArray[i].htmltext);
+        txtPageArray[i].markdown = await convertFVTTJnlLinksToMDLinksRefactor(txtPageArray[i].markdown,txtPageArray[i],folder_map);
+        txtPageArray[i].markdown = await cleanMDImageLinkPaths(txtPageArray[i].markdown);
+        txtPageArray[i].markdown = await addYAMLFrontMatter(txtPageArray[i].markdown, txtPageArray[i])
+        //console.log(txtPageArray[i].markdown);
+    }
+    
+    for(let i = 0; i < imageArray.length; i++){
+        imageArray[i].markdown = await addEmbeddedImageFromImgJournal(imageArray[i]);
+        imageArray[i].markdown = await addYAMLFrontMatter(imageArray[i].markdown, imageArray[i])
+        //console.log(imageArray[i].markdown);
+    }
+    console.log(pageArray);
+    console.log(compendiumObjectsToCreate);
+    await createCompendiumFiles()
+
+//    for(let i = 0; i < pageArray.length; i++){
+//        await writeFileToSystem(pageArray[i]);
+//    }
+    
+}
+
+async function createCompendiumFiles(){
+    
+    let compMap = await generateCompendiumFoldersMap(compendiumObjectsToCreate);
+    console.log(compMap);
+    for (let value of compMap.values()){
+        await exportFolderPathString(value,validMarkdownSourcePath()+validExportWorldPath(),markdownPathOptions);
+    }
+
+    let compActors = compendiumObjectsToCreate.filter(a => (a.type === 'Actor'));
+    let compActorsMap = new Map();
+    for(let i= 0; i<compActors.length; i++){
+        compActorsMap.set(compActors[i].UUID,compActors[i].type);
+    }
+    console.log(compActorsMap);
+    for(let key of compActorsMap.keys()){
+        let actObj = await fromUuid(key);
+        let singleActor = await actorPrepBase(actObj,compMap,true);
+        writeFileToSystem(singleActor);
+        console.log(singleActor);
+    }
+    /*
+    for(let i= 0; i<compActors.length; i++){
+
+        let actObj = await fromUuid(compActors[i].UUID);
+        let singleActor = await actorPrepBase(actObj,compMap,true);
+        writeFileToSystem(singleActor);
+    }*/
+    /*
+    let uniqueComp = [];
+    for(let value of compendiumObjectsToCreate){
+        if(uniqueComp.indexOf(value) === -1){
+            uniqueComp.push(value);
+        }
+    }
+    console.log(uniqueComp);
+    let compArray = compendiumObjectsToCreate.filter((value, index, self) =>
+        index === self.findIndex((t) => (
+            t.uuid === value.uuid && t.type === value.type
+        ))
+    );
+    return compArray;*/
+}
+
+async function startExportActors(){
+    let allTopLevelFolders = await game.folders.filter(f => (f.depth === 1) && f.displayed);
+    let folder_map = await generateFolderStringsMap(allTopLevelFolders);
+    Logger.log(folder_map);
+    
+    //may need to tighten this execution to for .. of loop to prevent the rest of everything running ahead?
+    game.folders.forEach(folder => {
+        exportFolderPath(folder, validMarkdownSourcePath()+validExportWorldPath(),folder_map, markdownPathOptions);
+    });
+
+    let singleActor = await actorPrepBase(game.actors.get("5rVhaf4masESOMek"),folder_map,false);
+    console.log(singleActor);
+    writeFileToSystem(singleActor);
+
+}
+
+async function writeFileToSystem(docObj){
+    let blob = new Blob([docObj.markdown], {type: "text/markdown"});
+    let file = new File([blob], docObj.name+'.md', {type: "text/markdown"});
+
+    FilePicker.upload(markdownPathOptions.activeSource, validMarkdownSourcePath()+validExportWorldPath()+docObj.folderPath, file, { bucket: null })
+        .then((result) => {
+            Logger.log(`Uploading ${validMarkdownSourcePath()+validExportWorldPath()+docObj.folderPath}/${docObj.name}`);
+        })
+        .catch((error) => {
+            Logger.log(error);
+        });
 }
 
 function validMarkdownSourcePath() {

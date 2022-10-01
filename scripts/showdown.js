@@ -4915,6 +4915,9 @@ showdown.subParser('makeMarkdown.node', function (node, globals, spansOnly) {
     case 'figure':
         if (!spansOnly) { txt = showdown.subParser('makeMarkdown.paragraph')(node, globals) + '\n\n'; }
         break;
+    case 'div':
+        if (!spansOnly) { txt = showdown.subParser('makeMarkdown.paragraph')(node, globals) + '\n\n'; }
+        break;
 
     //
     // SPANS
@@ -4948,6 +4951,11 @@ showdown.subParser('makeMarkdown.node', function (node, globals, spansOnly) {
     case 'figcaption': 
       txt = showdown.subParser('makeMarkdown.emphasis')(node, globals);
       break;
+    
+    case 'span':
+      txt = showdown.subParser('makeMarkdown.emphasis')(node, globals);
+      break;
+
 
     default:
       txt = node.outerHTML + '\n\n';
