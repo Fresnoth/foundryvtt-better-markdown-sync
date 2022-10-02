@@ -5,12 +5,24 @@ import { nonJournalHTMLPrep, convertFVTTJnlLinksToMDLinksRefactor, nonJournalLin
 
 export async function itemPrepBase(itemObj,foldermap,isCompendium){
     let itempath = '';
-    if(itemObj.folder != null){ //JournalEntries that are not in any subfolder will have a value of null, we will want to set the path to the top group folder
+    if(itemObj.folder != null && !isCompendium){ //JournalEntries that are not in any subfolder will have a value of null, we will want to set the path to the top group folder
         itempath = foldermap.get(itemObj.folder._id);
         if(itempath == undefined){itempath = 'Item'}; //Just in case we can't find the folder (which shouldn't happen, throw the document into the top group folder)
     }
     else{
-        itempath = 'Item';
+        if(isCompendium){
+            itempath = 'Compendium'+'/'+itemObj.pack.replace('.','/');
+        }
+        else{
+            itempath = 'Item';
+        }
+    }
+    let gameSystem = ''
+    if(itemObj._stats.systemId == null){
+        gameSystem = game.world.system; // this is a fallback as not all compendium items have the systemID filled in for legacy FVTT
+    }
+    else{
+        gameSystem = itemObj._stats.systemId;
     }
     let itemData = {
         _id: itemObj._id,
@@ -18,7 +30,7 @@ export async function itemPrepBase(itemObj,foldermap,isCompendium){
         name: makeStringSafe(itemObj.name),
         type: itemObj.type,
         imgpath: itemObj.img,
-        system: itemObj._stats.systemId,
+        system: gameSystem,
         folderPath: itempath
     }
 

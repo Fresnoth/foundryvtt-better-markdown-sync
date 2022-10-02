@@ -54,8 +54,10 @@ export async function addYAMLFrontMatter(journalContent,objDoc){
 
 export async function addEmbeddedImageFromImgJournal(jObj){
     let preworldpath = ''
-    if(jObj.imgpath.includes('icons/')){
-        preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryInstallSourcePath'); //'C:preworldpath/Program Files/Foundry Virtual Tabletop/resources/app/public/'
+    let imgpathArray = jObj.imgpath.split('/');
+    if(imgpathArray[0] == 'icons'){ // if icons is the first folder in the list this is most likely not in the user data folder and is instead in the Foundry Public folder
+        //need to work on copying "VALIDMARKDOWNSOURCEPATH logic an applying to these new user accessible game settings"
+        preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryInstallSourcePath'); //'C:/Program Files/Foundry Virtual Tabletop/resources/app/public/'
     }
     else{
         preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryDataSourcePath'); // 'C:/Users/zairf/AppData/Local/FoundryVTT/Data/'

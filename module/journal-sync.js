@@ -176,6 +176,7 @@ export async function readyModule() {
             title: "BMD TEST",
             icon: "fas fa-file-export",
             onClick: () => {
+                topLevelFolderCreate();
                 startExportAllJournals();
             },
             button: true,
@@ -342,10 +343,10 @@ async function startExportAllJournals(){
     console.log(compendiumObjectsToCreate);
     await createCompendiumFiles();
 
-   for(let i = 0; i < pageArray.length; i++){
+     for(let i = 0; i < pageArray.length; i++){
         await writeFileToSystem(pageArray[i]);
     }
-    
+    ui.notifications.info("Export completed");
 }
 
 
@@ -434,14 +435,14 @@ async function createCompendiumFiles(){
     for(let key of compActorsMap.keys()){
         let actObj = await fromUuid(key);
         let singleActor = await actorPrepBase(actObj,compMap,true);
-        //writeFileToSystem(singleActor);
+        writeFileToSystem(singleActor);
         //console.log(singleActor);
     }
 
     let compJournals = compendiumObjectsToCreate.filter(j => (j.type === 'JournalEntry'));
     let compJournalsMap = new Map();
     let compJournalsPageMap = new Map();
-    console.log(compJournals);
+    //console.log(compJournals);
     for(let i= 0; i<compJournals.length; i++){
         if(compJournals[i].UUID.includes('JournalEntryPage')){
             compJournalsPageMap.set(compJournals[i].UUID,'JournalEntryPage');
@@ -466,9 +467,24 @@ async function createCompendiumFiles(){
         //may need a check here for a hedding # identifier?  Not sure if we are cleaning this before this step
         let jObj = await fromUuid(key);
         let singlejArray = await journalPageV10prep(jObj,compJournalsPageMap,true);
-        console.log(singlejArray);
+        //console.log(singlejArray);
         singlejArray = await pageArrayHandler(singlejArray,compJournalsMap);
-        console.log(singlejArray);
+        //need a forEach loop here to go through the pages and write them to system
+        //console.log(singlejArray);
+    }
+
+    let compItems = compendiumObjectsToCreate.filter(i => (i.type === 'Item'));
+    console.log(compItems);
+    let compItemsMap = new Map();
+    for(let i=0;i<compItems.length;i++){
+        compItemsMap.set(compItems[i].UUID,compItems[i].type)
+    }
+    console.log(compItemsMap);
+    for(let key of compItemsMap.keys()){
+        let itemObj = await fromUuid(key);
+        let singlei = await itemPrepBase(itemObj,compItemsMap,true);
+        console.log(singlei);
+        writeFileToSystem(singlei);
     }
 }
 
@@ -501,7 +517,7 @@ async function startExportItems(){
     for(let value of game.items.values()){
         let singleItem = await itemPrepBase(value,folder_map,false);
         console.log(singleItem);
-        writeFileToSystem(singleItem);
+        //writeFileToSystem(singleItem);
     }
 //    let singleItem = await itemPrepBase(game.items.get("6SAOOfxrqNl6w1jY"),folder_map,false);
 //    console.log(singleItem);
