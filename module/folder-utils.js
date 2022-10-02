@@ -2,7 +2,12 @@ import * as Logger from './logger.js';
 
 // This needs to be added here to make sure that when creating folder name we are not adding characters allowed by foundry naming but not allowed by file system like :  this is probably a little extra overboard
 export function makeStringSafe(dirtyThing){
-    var safeString = String(dirtyThing).replace(/[:".!*+?&^$<>{}()@/|[\]\\]/g,"");
+    //var safeString = String(dirtyThing).replace(/[:".!*+?&^$<>{}()@/|[\]\\]/g,"");
+    //this uses unicode matching in regex to remove the following:
+    // \p{P} -any kind of punctuation character. 
+    // \p{S} - math symbols, currency signs, dingbats, box-drawing characters, etc.
+    // \p{C} - invisible control characters and unused code points.
+    var safeString = String(dirtyThing).replace(/[\p{P}\p{S}\p{C}]/gu,"");
     //console.log(safeString);
     return safeString;
 }

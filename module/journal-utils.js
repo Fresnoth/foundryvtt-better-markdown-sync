@@ -173,7 +173,8 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
                         j.collections.pages.forEach(p=>{
                             if(p != undefined){
                                 if(compArray[2] == p.name){
-                                    linkMap.set(match[0], MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(p.name),isWiki));//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(p.name).replace(/\s+/g, '%20')+'.md)'
+                                    //let  linktext = MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(p.name),isWiki);
+                                    linkMap.set(match[0], '['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(p.name).replace(/\s+/g, '%20')+'.md)');//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(p.name).replace(/\s+/g, '%20')+'.md)'
                                     compendiumObjectsToCreate.push(
                                         {
                                             type: compObjType,
@@ -187,7 +188,8 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
                 else{
                     //Need to add any compendium links to an object so that it can then have documents / folders created
                     if(compObj.length == 1){
-                        linkMap.set(match[0], MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(compObj[0].name),isWiki));//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(compObj[0].name).replace(/\s+/g, '%20')+'.md)');
+                        //let linkText = MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(compObj[0].name),isWiki);
+                        linkMap.set(match[0], '['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(compObj[0].name).replace(/\s+/g, '%20')+'.md)');//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(compObj[0].name).replace(/\s+/g, '%20')+'.md)');
                         compendiumObjectsToCreate.push(
                             {
                                 type: compObjType,
@@ -237,7 +239,8 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
                         if(uuidArray[0] == 'Compendium'){
                             let path = uuidArray[0] + '/' + uuidArray[1] + '/' + uuidArray[2];
                             let compUuidObjType = await game.packs.get(uuidArray[1]+'.'+uuidArray[2]).metadata.type;
-                            linkMap.set(match[0],MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(uuidObj.name),isWiki));//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(uuidObj.name).replace(/\s+/g, '%20')+'.md)');
+                            let linktext = await MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(uuidObj.name),isWiki);
+                            linkMap.set(match[0],linktext);//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(uuidObj.name).replace(/\s+/g, '%20')+'.md)');
                             compendiumObjectsToCreate.push(
                                 {
                                     type: compUuidObjType,
