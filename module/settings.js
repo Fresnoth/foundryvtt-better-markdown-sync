@@ -41,6 +41,22 @@ const settings = [
     onChange: fetchParams
   },
   {
+    name: "FoundryInstallSourcePath",
+    scope: "world",
+    default: "C:/Program Files/Foundry Virtual Tabletop/resources/app/public",
+    type: String,
+    requiresreload: false,
+    onChange: fetchParams
+  },
+  {
+    name: "FoundryDataSourcePath",
+    scope: "world",
+    default: "C:/Users/zairf/AppData/Local/FoundryVTT/Data/",
+    type: String,
+    requiresreload: false,
+    onChange: fetchParams
+  },
+  {
     name: "JournalEditorLink",
     scope: "world",
     default: "",

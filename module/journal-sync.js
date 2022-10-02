@@ -2,8 +2,9 @@
 import * as Constants from "./constants.js"
 import * as Logger from './logger.js'
 import { generateFolderStringsMap, exportFolderPath, generateCompendiumFoldersMap, exportFolderPathString } from './folder-utils.js'
-import { journalV10prep, convertFVTTJnlLinksToMDLinks, convertHTMLtoMD, compendiumObjectsToCreate, cleanMDImageLinkPaths, addYAMLFrontMatter, journalV10prepALL, convertFVTTJnlLinksToMDLinksRefactor, addEmbeddedImageFromImgJournal } from './journal-utils.js'
+import { journalV10prep, convertFVTTJnlLinksToMDLinks, convertHTMLtoMD, compendiumObjectsToCreate, cleanMDImageLinkPaths, addYAMLFrontMatter, journalV10prepALL, convertFVTTJnlLinksToMDLinksRefactor, addEmbeddedImageFromImgJournal, singleJournalPageV10prep } from './journal-utils.js'
 import { actorPrepBase } from './actor-utils.js'
+import { itemPrepBase } from './item-utils.js'
 
 let markdownPathOptions, markdownSourcePath, journalEditorLink, importWorldPath, exportWorldPath;
 let enableTracing = false;
@@ -190,6 +191,26 @@ export async function readyModule() {
             button: true,
         });
 
+        group.tools.push({
+            name: "BMDItems",
+            title: "Item Test",
+            icon: "fas fa-file-export",
+            onClick: () => {
+                startExportItems();
+            },
+            button: true,
+        });
+
+        group.tools.push({
+            name: "BMDSingleJournal",
+            title: "Single Journal Test",
+            icon: "fas fa-file-export",
+            onClick: () => {
+                startExportSingleJournal();
+            },
+            button: true,
+        });
+
         if (journalEditorLink != "") {
             group.tools.push({
                 name: "edit",
@@ -308,23 +329,92 @@ async function startExportAllJournals(){
         txtPageArray[i].markdown = await convertHTMLtoMD(txtPageArray[i].htmltext);
         txtPageArray[i].markdown = await convertFVTTJnlLinksToMDLinksRefactor(txtPageArray[i].markdown,txtPageArray[i],folder_map);
         txtPageArray[i].markdown = await cleanMDImageLinkPaths(txtPageArray[i].markdown);
-        txtPageArray[i].markdown = await addYAMLFrontMatter(txtPageArray[i].markdown, txtPageArray[i])
+        txtPageArray[i].markdown = await addYAMLFrontMatter(txtPageArray[i].markdown, txtPageArray[i]);
         //console.log(txtPageArray[i].markdown);
     }
     
     for(let i = 0; i < imageArray.length; i++){
         imageArray[i].markdown = await addEmbeddedImageFromImgJournal(imageArray[i]);
-        imageArray[i].markdown = await addYAMLFrontMatter(imageArray[i].markdown, imageArray[i])
+        imageArray[i].markdown = await addYAMLFrontMatter(imageArray[i].markdown, imageArray[i]);
         //console.log(imageArray[i].markdown);
     }
     console.log(pageArray);
     console.log(compendiumObjectsToCreate);
-    await createCompendiumFiles()
+    await createCompendiumFiles();
 
-//    for(let i = 0; i < pageArray.length; i++){
-//        await writeFileToSystem(pageArray[i]);
-//    }
+   for(let i = 0; i < pageArray.length; i++){
+        await writeFileToSystem(pageArray[i]);
+    }
     
+}
+
+
+async function startExportSingleJournal(){
+    let allTopLevelFolders = await game.folders.filter(f => (f.depth === 1) && f.displayed);
+    let folder_map = await generateFolderStringsMap(allTopLevelFolders);
+    Logger.log(folder_map);
+
+        //may need a check here for a hedding # identifier?  Not sure if we are cleaning this before this step
+        let jpObj = await game.journal.get("GzFr880LIgxWfEIq");
+        console.log(jpObj);
+        let singlejp = await journalV10prep(jpObj,folder_map,false);
+        for(let i=0;i<singlejp.length;i++){
+            console.log(singlejp[i]);
+            console.log(singlejp[i].htmltext);
+            singlejp[i].markdown = await convertHTMLtoMD(singlejp[i].htmltext);
+            console.log(singlejp[i].markdown);
+            singlejp[i].markdown = await convertFVTTJnlLinksToMDLinksRefactor(singlejp[i].markdown,singlejp[i],folder_map);
+            console.log(singlejp[i].markdown);
+            singlejp[i].markdown = await cleanMDImageLinkPaths(singlejp[i].markdown);
+            console.log(singlejp[i].markdown);
+            singlejp[i].markdown = await addYAMLFrontMatter(singlejp[i].markdown, singlejp[i]);
+            console.log(singlejp[i].markdown);
+        }
+        //writeFileToSystem(singlejp);
+}
+
+//given a uuid run all things needed to export the page and return the data
+/*async function startExportSingleJournalPage(){
+    let allTopLevelFolders = await game.folders.filter(f => (f.depth === 1) && f.displayed);
+    let folder_map = await generateFolderStringsMap(allTopLevelFolders);
+    Logger.log(folder_map);
+
+        //may need a check here for a hedding # identifier?  Not sure if we are cleaning this before this step
+        let jpObj = await game.journal.get("GzFr880LIgxWfEIq");
+        console.log(jpObj);
+        let singlejp = await journalV10prep(jpObj,folder_map,false);
+        for(let i=0;i<singlejp.length;)
+        console.log(singlejp);
+        console.log(singlejp.htmltext);
+        singlejp.markdown = await convertHTMLtoMD(singlejp.htmltext);
+        console.log(singlejp.markdown);
+        singlejp.markdown = await convertFVTTJnlLinksToMDLinksRefactor(singlejp.markdown,singlejp,folder_map);
+        console.log(singlejp.markdown);
+        singlejp.markdown = await cleanMDImageLinkPaths(singlejp.markdown);
+        console.log(singlejp.markdown);
+        singlejp.markdown = await addYAMLFrontMatter(singlejp.markdown, singlejp);
+        console.log(singlejp.markdown);
+        //writeFileToSystem(singlejp);
+}*/
+
+async function pageArrayHandler(pageArray,folder_map){
+    let imageArray = pageArray.filter(p => (p.type === 'image'));
+    let txtPageArray = pageArray.filter(p => (p.type === 'text'));
+
+    for(let i = 0; i < txtPageArray.length; i++){
+        txtPageArray[i].markdown = await convertHTMLtoMD(txtPageArray[i].htmltext);
+        txtPageArray[i].markdown = await convertFVTTJnlLinksToMDLinksRefactor(txtPageArray[i].markdown,txtPageArray[i],folder_map);
+        txtPageArray[i].markdown = await cleanMDImageLinkPaths(txtPageArray[i].markdown);
+        txtPageArray[i].markdown = await addYAMLFrontMatter(txtPageArray[i].markdown, txtPageArray[i]);
+        //console.log(txtPageArray[i].markdown);
+    }
+    
+    for(let i = 0; i < imageArray.length; i++){
+        imageArray[i].markdown = await addEmbeddedImageFromImgJournal(imageArray[i]);
+        imageArray[i].markdown = await addYAMLFrontMatter(imageArray[i].markdown, imageArray[i]);
+        //console.log(imageArray[i].markdown);
+    }
+    return pageArray;
 }
 
 async function createCompendiumFiles(){
@@ -344,30 +434,42 @@ async function createCompendiumFiles(){
     for(let key of compActorsMap.keys()){
         let actObj = await fromUuid(key);
         let singleActor = await actorPrepBase(actObj,compMap,true);
-        writeFileToSystem(singleActor);
-        console.log(singleActor);
+        //writeFileToSystem(singleActor);
+        //console.log(singleActor);
     }
-    /*
-    for(let i= 0; i<compActors.length; i++){
 
-        let actObj = await fromUuid(compActors[i].UUID);
-        let singleActor = await actorPrepBase(actObj,compMap,true);
-        writeFileToSystem(singleActor);
-    }*/
-    /*
-    let uniqueComp = [];
-    for(let value of compendiumObjectsToCreate){
-        if(uniqueComp.indexOf(value) === -1){
-            uniqueComp.push(value);
+    let compJournals = compendiumObjectsToCreate.filter(j => (j.type === 'JournalEntry'));
+    let compJournalsMap = new Map();
+    let compJournalsPageMap = new Map();
+    console.log(compJournals);
+    for(let i= 0; i<compJournals.length; i++){
+        if(compJournals[i].UUID.includes('JournalEntryPage')){
+            compJournalsPageMap.set(compJournals[i].UUID,'JournalEntryPage');
+        }
+        else{
+            compJournalsMap.set(compJournals[i].UUID,compJournals[i].type);
         }
     }
-    console.log(uniqueComp);
-    let compArray = compendiumObjectsToCreate.filter((value, index, self) =>
-        index === self.findIndex((t) => (
-            t.uuid === value.uuid && t.type === value.type
-        ))
-    );
-    return compArray;*/
+    console.log(compJournalsMap);
+    for(let key of compJournalsPageMap.keys()){
+        //may need a check here for a hedding # identifier?  Not sure if we are cleaning this before this step
+        let jpObj = await fromUuid(key);
+        let singlejp = await singleJournalPageV10prep(jpObj,compJournalsPageMap,true);
+        singlejp.markdown = await convertHTMLtoMD(singlejp.htmltext);
+        singlejp.markdown = await convertFVTTJnlLinksToMDLinksRefactor(singlejp.markdown,singlejp,compJournalsPageMap);
+        singlejp.markdown = await cleanMDImageLinkPaths(singlejp.markdown);
+        singlejp.markdown = await addYAMLFrontMatter(singlejp.markdown, singlejp);
+        writeFileToSystem(singlejp);
+    }
+    
+    for(let key of compJournalsMap.keys()){
+        //may need a check here for a hedding # identifier?  Not sure if we are cleaning this before this step
+        let jObj = await fromUuid(key);
+        let singlejArray = await journalPageV10prep(jObj,compJournalsPageMap,true);
+        console.log(singlejArray);
+        singlejArray = await pageArrayHandler(singlejArray,compJournalsMap);
+        console.log(singlejArray);
+    }
 }
 
 async function startExportActors(){
@@ -379,11 +481,41 @@ async function startExportActors(){
     game.folders.forEach(folder => {
         exportFolderPath(folder, validMarkdownSourcePath()+validExportWorldPath(),folder_map, markdownPathOptions);
     });
+    for(let value of game.actors.values()){
+        let singleActor = await actorPrepBase(value,folder_map,false);
+        console.log(singleActor);
+        writeFileToSystem(singleActor);
+    }
+}
 
-    let singleActor = await actorPrepBase(game.actors.get("5rVhaf4masESOMek"),folder_map,false);
-    console.log(singleActor);
-    writeFileToSystem(singleActor);
+async function startExportItems(){
+    let allTopLevelFolders = await game.folders.filter(f => (f.depth === 1) && f.displayed);
+    let folder_map = await generateFolderStringsMap(allTopLevelFolders);
+    Logger.log(folder_map);
 
+    //may need to tighten this execution to for .. of loop to prevent the rest of everything running ahead?
+    game.folders.forEach(folder => {
+        exportFolderPath(folder, validMarkdownSourcePath()+validExportWorldPath(),folder_map, markdownPathOptions);
+    });
+
+    for(let value of game.items.values()){
+        let singleItem = await itemPrepBase(value,folder_map,false);
+        console.log(singleItem);
+        writeFileToSystem(singleItem);
+    }
+//    let singleItem = await itemPrepBase(game.items.get("6SAOOfxrqNl6w1jY"),folder_map,false);
+//    console.log(singleItem);
+//    writeFileToSystem(singleItem);
+}
+
+//This function ensures that we always have a top folder like "Item" to place documents into
+//Due to the way that we process folders in other functions if a particular Document Type has no folders but has items all the
+//items will have a "null" folder and no top level folder will be created to hold those "folder-less" documents
+async function topLevelFolderCreate(){
+    let TOP_FOLDER_ARRAY = ['JournalEntry','Actor','Item','Scene','RollTable','Compendium'];
+    for(let i=0;i<TOP_FOLDER_ARRAY.length;i++){
+        exportFolderPathString(TOP_FOLDER_ARRAY[i],validMarkdownSourcePath()+validExportWorldPath(),markdownPathOptions);
+    }
 }
 
 async function writeFileToSystem(docObj){

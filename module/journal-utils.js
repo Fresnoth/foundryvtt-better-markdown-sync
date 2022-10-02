@@ -1,6 +1,7 @@
 import * as Logger from './logger.js';
 import * as Constants from './constants.js';
 import { makeStringSafe } from './folder-utils.js';
+
 //import showdown from '../scripts/showdown.js';
 //import { NodeHtmlMarkdown } from './node-html-markdown/dist/main';
 export let compendiumObjectsToCreate = [];
@@ -38,6 +39,7 @@ export async function addYAMLFrontMatter(journalContent,objDoc){
         case 'Item':
             yamlOut += 'FVTT_ID: '+qu+objDoc._id+qu+el;
             yamlOut += 'FVTT_UUID: '+qu+'Item.'+objDoc._id+qu+el;
+            yamlOut += 'FVTT_ITEM_TYPE: '+qu+objDoc.type+qu+el;
             break;
         case 'Scene':
             break;
@@ -51,7 +53,13 @@ export async function addYAMLFrontMatter(journalContent,objDoc){
 }
 
 export async function addEmbeddedImageFromImgJournal(jObj){
-    let preworldpath = 'C:/Users/zairf/AppData/Local/FoundryVTT/Data/'
+    let preworldpath = ''
+    if(jObj.imgpath.includes('icons/')){
+        preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryInstallSourcePath'); //'C:preworldpath/Program Files/Foundry Virtual Tabletop/resources/app/public/'
+    }
+    else{
+        preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryDataSourcePath'); // 'C:/Users/zairf/AppData/Local/FoundryVTT/Data/'
+    }
     let outgoingStr = '![Image]('+String(preworldpath+jObj.imgpath).replace(/\s+/g, '%20')+')'
     return outgoingStr;
 }
@@ -61,33 +69,50 @@ export async function cleanMDImageLinkPaths(journalContent) {
     let incomingStr = journalContent;
     const matches = incomingStr.matchAll(embededMDImageRegex);
     let linkMap = new Map();
-    let preworldpath = 'C:/Users/zairf/AppData/Local/FoundryVTT/Data/'
+    let preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryDataSourcePath'); //'C:/Users/zairf/AppData/Local/FoundryVTT/Data/'
     for (const match of matches){
         linkMap.set(match[0], '![Image]('+String(preworldpath+match.groups.BadLink).replace(/\s+/g, '%20')+')');
+        Logger.log(match[0]);
     }
     //console.log(linkMap);
     ///iterate through map and then str replace all links with the appropriate ids
     let outgoingStr = incomingStr;
+    //Logger.log(outgoingStr);
     linkMap.forEach((value,key) => {
         outgoingStr = outgoingStr.replaceAll(key,value);
     });
+    //Logger.log(outgoingStr);
     //console.log(outgoingStr);
     return outgoingStr;
 }
 
 async function MDLinkHelper(docObj,foldermap,origDocObj,match,matchedUserText,matchedDocType,preworldpath){
+    let isWiki = true;
     if(docObj != undefined){ //check to make sure we are in the right place
         if(docObj.folder != null){
             let path = foldermap.get(docObj.folder._id);
-            return '['+matchedUserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(docObj.name).replace(/\s+/g, '%20')+'.md)';
+            let link = await MDLinkType(matchedUserText,preworldpath,path,makeStringSafe(docObj.name),isWiki);
+            return link //'['+matchedUserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(docObj.name).replace(/\s+/g, '%20')+'.md)';
         }
         else{ //This is a document that is not in a folder at all
-            return '['+matchedUserText+']('+preworldpath+'/'+matchedDocType+'/'+makeStringSafe(docObj.name).replace(/\s+/g, '%20')+'.md)';
+            let link = await MDLinkType(matchedUserText,preworldpath,matchedDocType,makeStringSafe(docObj.name),isWiki);
+            return link //'['+matchedUserText+']('+preworldpath+'/'+matchedDocType+'/'+makeStringSafe(docObj.name).replace(/\s+/g, '%20')+'.md)';
         }
     }
     else{
-        Logger.log(`This is a bad link like thing and will not be replaced: ${match[0]} it is in ${origDocObj.name} if you would like to fix manually`);
+        Logger.logError(`This is a bad link like thing and will not be replaced: ${match[0]} it is in ${origDocObj.name} if you would like to fix manually`);
         return null;
+    }
+}
+
+async function MDLinkType(usertext,preworldpath,path,name,isWikiStyle){
+    if(isWikiStyle){
+        let link = '[['+preworldpath+'/'+path+'/'+name+'|'+usertext+']]';
+        return link;
+    }
+    else{
+        let link = '['+usertext+']('+preworldpath+'/'+path+'/'+name.replace(/\s+/g, '%20')+'.md)';
+        return link;
     }
 }
 //Specific Header in a Journal Entry Page Format: @UUID[.VoKPynzEvqDCnUKJ#02:-trial-by-fire]{02: Trial By Fire}
@@ -98,7 +123,9 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
     let incomingStr = journalContent;
     const regexForProperlyFormedFVTTLinks = new RegExp('@(?<DocType>.+?)\\[(?<DocID>.+?)\\]\\{(?<UserText>.+?)\\}', 'gu');
     const matches = incomingStr.matchAll(regexForProperlyFormedFVTTLinks);
-    let preworldpath = 'C:/Users/zairf/AppData/Local/FoundryVTT/Data/fvtt-md-sync/spelljammer'; //game.settings.get("bmd-sync","") // not currently using may in future
+    let isWiki = true;
+    //let preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryDataSourcePath')+game.settings.get(Constants.MODULE_NAME, 'MarkdownSourcePath')+game.world.id; //'C:/Users/zairf/AppData/Local/FoundryVTT/Data/fvtt-md-sync/spelljammer'; //game.settings.get("bmd-sync","") // not currently using may in future
+    let preworldpath = game.world.id;
     let linkMap = new Map();
     for (const match of matches){
         //console.log(match.groups.DocType);
@@ -146,7 +173,7 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
                         j.collections.pages.forEach(p=>{
                             if(p != undefined){
                                 if(compArray[2] == p.name){
-                                    linkMap.set(match[0],'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(p.name).replace(/\s+/g, '%20')+'.md)');
+                                    linkMap.set(match[0], MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(p.name),isWiki));//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(p.name).replace(/\s+/g, '%20')+'.md)'
                                     compendiumObjectsToCreate.push(
                                         {
                                             type: compObjType,
@@ -160,7 +187,7 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
                 else{
                     //Need to add any compendium links to an object so that it can then have documents / folders created
                     if(compObj.length == 1){
-                        linkMap.set(match[0],'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(compObj[0].name).replace(/\s+/g, '%20')+'.md)');
+                        linkMap.set(match[0], MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(compObj[0].name),isWiki));//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(compObj[0].name).replace(/\s+/g, '%20')+'.md)');
                         compendiumObjectsToCreate.push(
                             {
                                 type: compObjType,
@@ -210,7 +237,7 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
                         if(uuidArray[0] == 'Compendium'){
                             let path = uuidArray[0] + '/' + uuidArray[1] + '/' + uuidArray[2];
                             let compUuidObjType = await game.packs.get(uuidArray[1]+'.'+uuidArray[2]).metadata.type;
-                            linkMap.set(match[0],'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(uuidObj.name).replace(/\s+/g, '%20')+'.md)');
+                            linkMap.set(match[0],MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(uuidObj.name),isWiki));//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(uuidObj.name).replace(/\s+/g, '%20')+'.md)');
                             compendiumObjectsToCreate.push(
                                 {
                                     type: compUuidObjType,
@@ -502,38 +529,6 @@ function prepBadHTMLJournalLinks(dirtyJournalContent){
     }
 }
 
-export async function journalV10prep(journal, foldermap){
-    let journalent = journal;
-    let journalpath = foldermap.get(journalent.folder._id); //will need to check for undefined her
-    //console.log(journalent.folder._id)
-    let journalPageArray = [];
-    journalent.pages.forEach(p =>{
-        let journalPageData = {
-            jEntryID: journalent._id,
-            docType: 'JournalEntryPage',
-            unsafeJEName: journalent.name,
-            unsafeJEPageName: p.name,
-            jEntryName: makeStringSafe(journalent.name),
-            folder: journalent.folder,
-            pageID: p._id,
-            type: p.type,
-            name:  makeStringSafe(p.name),
-            htmltext: prepBadHTMLJournalLinks(p.text.content),
-            mdtext: p.text.markdown,
-            format: p.text.format,
-            folderPath: journalpath
-        }
-        journalPageArray.push(journalPageData);
-    })
-    Logger.log(`First pass Page Array: ${journalPageArray}`);
-    for (let page of journalPageArray) {
-        let cleanedString = await addJournalLinksIds(page.htmltext);
-        page.htmltext = cleanedString;
-    }
-    Logger.log(`Second pass Page Arary: ${journalPageArray}`);
-    return journalPageArray;
-}
-
 export async function journalV10prepALL(foldermap){
     let journalPageArray = [];
     game.journal.directory.documents.forEach(j => {
@@ -575,6 +570,90 @@ export async function journalV10prepALL(foldermap){
     }
     Logger.log(`Second pass Page Arary: ${journalPageArray}`);
     return journalPageArray;
+}
+
+export async function journalV10prep(journal, foldermap, isCompendium){
+    let j = journal;
+    let journalpath ='';
+    if(j.folder!=null && !isCompendium){ ///JournalEntries that are not in any subfolder will have a value of null, we will want to set the path to the top group folder
+        journalpath = foldermap.get(j.folder._id);
+        if(journalpath == undefined){journalpath = 'JournalEntry'} //Just in case we can't find the folder (which shouldn't happen, throw the document into the top group folder)
+    }
+    else{
+        if(isCompendium){
+            journalpath = 'Compendium'+'/'+j.pack.replace('.','/');
+        }
+        else{
+            journalpath = 'JournalEntry';
+        }
+    }
+    //console.log(journalent.folder._id)
+    let journalPageArray = [];
+    j.pages.forEach(p =>{
+        let journalPageData = {
+            jEntryID: j._id,
+            docType: 'JournalEntryPage',
+            unsafeJEName: j.name,
+            unsafeJEPageName: p.name,
+            jEntryName: makeStringSafe(j.name),
+            folder: j.folder,
+            pageID: p._id,
+            type: p.type,
+            name:  makeStringSafe(p.name),
+            htmltext: prepBadHTMLJournalLinks(p.text.content),
+            mdtext: p.text.markdown,
+            markdown: '',
+            format: p.text.format,
+            folderPath: journalpath,
+            imgpath: p.src
+        }
+        journalPageArray.push(journalPageData);
+    })
+    Logger.log(`First pass Page Array: ${journalPageArray}`);
+    for (let page of journalPageArray) {
+        let cleanedString = await addJournalLinksIds(page.htmltext);
+        page.htmltext = cleanedString;
+    }
+    Logger.log(`Second pass Page Arary: ${journalPageArray}`);
+    return journalPageArray;
+}
+
+export async function singleJournalPageV10prep(journalPage,foldermap,isCompendium){
+    let journalpath = '';
+    if(journalPage.parent.folder!=null && !isCompendium){ ///JournalEntries that are not in any subfolder will have a value of null, we will want to set the path to the top group folder
+        journalpath = foldermap.get(journalPage.parent.folder._id);
+        if(journalpath == undefined){journalpath = 'JournalEntry'} //Just in case we can't find the folder (which shouldn't happen, throw the document into the top group folder)
+    }
+    else{
+        if(isCompendium){
+            journalpath = 'Compendium'+'/'+journalPage.pack.replace('.','/');
+        }
+        else{
+            journalpath = 'JournalEntry';
+        }
+    }
+    let p = journalPage;
+    let journalPageData = {
+        jEntryID: p.parent._id,
+        docType: 'JournalEntryPage',
+        unsafeJEName: p.parent.name,
+        unsafeJEPageName: p.name,
+        jEntryName: makeStringSafe(p.parent.name),
+        folder: p.parent.folder,
+        pageID: p._id,
+        type: p.type,
+        name:  makeStringSafe(p.name),
+        htmltext: prepBadHTMLJournalLinks(p.text.content),
+        mdtext: p.text.markdown,
+        markdown: '',
+        format: p.text.format,
+        folderPath: journalpath,
+        imgpath: p.src
+    }
+
+    journalPageData.htmltext = await addJournalLinksIds(journalPageData.htmltext);
+
+    return journalPageData;
 }
 
 export async function convertHTMLtoMD(cleanhtmlstring){

@@ -3,7 +3,7 @@ import * as Constants from './constants.js';
 import { makeStringSafe } from './folder-utils.js';
 import { nonJournalHTMLPrep, convertFVTTJnlLinksToMDLinksRefactor, nonJournalLinkIDs, convertHTMLtoMD, addEmbeddedImageFromImgJournal, addYAMLFrontMatter} from './journal-utils.js'
 
-export async function itemPrepBase(itemObj,foldermap){
+export async function itemPrepBase(itemObj,foldermap,isCompendium){
     let itempath = '';
     if(itemObj.folder != null){ //JournalEntries that are not in any subfolder will have a value of null, we will want to set the path to the top group folder
         itempath = foldermap.get(itemObj.folder._id);
@@ -22,7 +22,7 @@ export async function itemPrepBase(itemObj,foldermap){
         folderPath: itempath
     }
 
-    //itemData.markdown = await addEmbeddedImageFromImgJournal(itemData);
+    itemData.markdown = await addEmbeddedImageFromImgJournal(itemData);
     
     if(itemData.system == 'dnd5e'){
         itemData.descripton = await dnd5eItemDescToMD(itemObj,foldermap);
