@@ -44,7 +44,7 @@ export async function actorPrepBase(actorObj,foldermap,isCompendium){
 
 async function dnd5eActorBioToMD(actorObj,foldermap){
     let cleanedContent = ''
-    console.log(actorObj);
+    Logger.logTrace(actorObj);
     if(actorObj.system.details.biography.value != undefined){
         cleanedContent = await nonJournalHTMLPrep(actorObj.system.details.biography.value);
         cleanedContent = await nonJournalLinkIDs(cleanedContent);

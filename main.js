@@ -16,7 +16,17 @@ Hooks.once('init', async function () {
     Logger.log("  _/_(_)(_/_/ (_/ / /_(_/(_(/_---(___)/ (_/_/ / /_(__");
     Logger.log(" //                                      /           ");
     Logger.log("(/                                      '            ");
-    
+    Logger.log("____ ____ ____ ____ ____ ____                      ");
+    Logger.log("||B |||E |||T |||T |||E |||R ||                    ");
+    Logger.log("||__|||__|||__|||__|||__|||__||                    ");
+    Logger.log("|_________|____|____|____|____|____ ____ ____ ____ ");
+    Logger.log("||       |||M |||A |||R |||K |||D |||O |||W |||N ||");
+    Logger.log("||_______|||__|||__|||__|||__|||__|||__|||__|||__||");
+    Logger.log("|_________|_________|____|____|____|____|/__\|/__\|");
+    Logger.log("||       |||       |||S |||Y |||N |||C ||          ");
+    Logger.log("||_______|||_______|||__|||__|||__|||__||          ");
+    Logger.log("|/_______\|/_______\|/__\|/__\|/__\|/__\|          ");
+    Logger.log("                                                   ");
     // Assign custom classes and constants here
 
     // Register custom module settings

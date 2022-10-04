@@ -57,10 +57,10 @@ export async function addEmbeddedImageFromImgJournal(jObj){
     let imgpathArray = jObj.imgpath.split('/');
     if(imgpathArray[0] == 'icons'){ // if icons is the first folder in the list this is most likely not in the user data folder and is instead in the Foundry Public folder
         //need to work on copying "VALIDMARKDOWNSOURCEPATH logic an applying to these new user accessible game settings"
-        preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryInstallSourcePath'); //'C:/Program Files/Foundry Virtual Tabletop/resources/app/public/'
+        preworldpath = game.settings.get(Constants.MODULE_NAME, 'SSHMappedDrive')+game.settings.get(Constants.MODULE_NAME, 'FoundryInstallSourcePath'); //'C:/Program Files/Foundry Virtual Tabletop/resources/app/public/'
     }
     else{
-        preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryDataSourcePath'); // 'C:/Users/zairf/AppData/Local/FoundryVTT/Data/'
+        preworldpath = game.settings.get(Constants.MODULE_NAME, 'SSHMappedDrive')+game.settings.get(Constants.MODULE_NAME, 'FoundryDataSourcePath'); // 'C:/Users/zairf/AppData/Local/FoundryVTT/Data/'
     }
     let outgoingStr = '![Image]('+String(preworldpath+jObj.imgpath).replace(/\s+/g, '%20')+')'
     return outgoingStr;
@@ -71,7 +71,7 @@ export async function cleanMDImageLinkPaths(journalContent) {
     let incomingStr = journalContent;
     const matches = incomingStr.matchAll(embededMDImageRegex);
     let linkMap = new Map();
-    let preworldpath = game.settings.get(Constants.MODULE_NAME, 'FoundryDataSourcePath'); //'C:/Users/zairf/AppData/Local/FoundryVTT/Data/'
+    let preworldpath = game.settings.get(Constants.MODULE_NAME, 'SSHMappedDrive')+game.settings.get(Constants.MODULE_NAME, 'FoundryDataSourcePath'); //'C:/Users/zairf/AppData/Local/FoundryVTT/Data/'
     for (const match of matches){
         linkMap.set(match[0], '![Image]('+String(preworldpath+match.groups.BadLink).replace(/\s+/g, '%20')+')');
         Logger.log(match[0]);
@@ -160,17 +160,27 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
         else{
 
         switch(matchedDoc){
-            //handles links in the following format: @Compendium[dnd5e.rules.Using Each Ability]{Persuasion}
+            
             case 'Compendium':
                 let compArray = String(match.groups.DocID).split('.');
-                //Logger.log(`Comp First Part: ${compArray[0]} Comp Sec Part: ${compArray[1]} Comp Third Part: ${compArray[2]}`);
-                let compObj = await game.packs.get(compArray[0]+'.'+compArray[1]).getDocuments({name: compArray[2]});
                 let compObjType = await game.packs.get(compArray[0]+'.'+compArray[1]).metadata.type;
+                //Logger.log(`Comp First Part: ${compArray[0]} Comp Sec Part: ${compArray[1]} Comp Third Part: ${compArray[2]}`);
+                //handles links in the following format: @Compendium[dnd5e.rules.Using Each Ability]{Persuasion}
+                let compObj = await game.packs.get(compArray[0]+'.'+compArray[1]).getDocuments({name: compArray[2]});
+                let isId = false;
+                if(compObj.length == 0){ //this may be a v10 compendium link in the following format: @Compendium[shared-compendiums.monsters.Diu6omW9EaXznO3r]{astral blights}
+                    compObj = await game.packs.get(compArray[0]+'.'+compArray[1]).getDocument(compArray[2]);
+                    console.log(compObj);
+                    if(compObj != null){
+                        isId = true;
+                        console.log(isId);
+                    }
+                }
                 path = matchedDoc + '/' + compArray[0] + '/' + compArray[1];
                 //THIS WILL NEED A CHECK HERE TO SEE IF THE COMPENDIUM RESULT IS A JOURNAL ENTRY, if so in V10 the entry may be pointing to a PAGE now and not a JE itself
                 if(parseFloat(await game.world.coreVersion) >= 10 && compObjType == 'JournalEntry'){
                     //we have a "@COMPENDIUM" JournalEntry link in version 10, compendium links are hopefully being migrated to UUID in 10 for the most part but this is a catch in case there is an older JE in a v10 environment    
-                    let compDocList = await game.packs.get(compArray[0]+'.'+compArray[1]).getDocuments()
+                    let compDocList = await game.packs.get(compArray[0]+'.'+compArray[1]).getDocuments();
                     compDocList.forEach(j => {
                         j.collections.pages.forEach(p=>{
                             if(p != undefined){
@@ -189,6 +199,7 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
                 }
                 else{
                     //Need to add any compendium links to an object so that it can then have documents / folders created
+                    console.log(isId);
                     if(compObj.length == 1){
                         //let linkText = MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(compObj[0].name),isWiki);
                         linkMap.set(match[0], '['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(compObj[0].name).replace(/\s+/g, '%20')+'.md)');//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(compObj[0].name).replace(/\s+/g, '%20')+'.md)');
@@ -199,6 +210,14 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
                             });
                     }
                     else{
+                        if(isId){ // these are links formatted like this @Compendium[shared-compendiums.monsters.Diu6omW9EaXznO3r]{astral blights}
+                            linkMap.set(match[0], '['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(compObj.name).replace(/\s+/g, '%20')+'.md)');//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(compObj[0].name).replace(/\s+/g, '%20')+'.md)');
+                            compendiumObjectsToCreate.push(
+                                {
+                                    type: compObjType,
+                                    UUID: compObj.uuid
+                                });
+                        }
                         //console.log(compObj)
                         Logger.logError(`Document ${compObj[0]} in ${match.groups.DocID} has multiple matches for its name or was not found, please make its name unique and its link in the document is correct.  Otherwise it will not be handled or exported.`);
                     }
@@ -214,41 +233,65 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
                     let uuidIDArray = uuidString.split('#');
                     let uuidObj = await fromUuid(uuidIDArray[0]);
                     let uuidArray = uuidString.split('.');
-                    if(uuidArray[0] == 'JournalEntry'){
-                        if(uuidObj.parent.folder != null){
-                            let path = foldermap.get(uuidObj.parent.folder._id);
-                            linkMap.set(match[0],'[['+path+'/'+makeStringSafe(uuidObj.name)+'#'+match.groups.UserText+'|'+match.groups.UserText+']]');
+                    let wikiLink = '';
+                    if(uuidObj != undefined){ //we check to make sure we find an object, we may not find it due to this being a broken link or bad parse information
+                        if(uuidArray[0] == 'JournalEntry'){
+                            if(uuidObj.parent.folder != null){
+                                let path = foldermap.get(uuidObj.parent.folder._id);
+                                wikiLink = await headerLinkHelper(uuidIDArray[1],path,uuidObj,match.groups.UserText);
+                                linkMap.set(match[0],wikiLink);
+                                //linkMap.set(match[0],'[['+path+'/'+makeStringSafe(uuidObj.name)+'#'+match.groups.UserText+'|'+match.groups.UserText+']]');
+                            }
+                            else{
+                                let path = 'JournalEntry';
+                                wikiLink = await headerLinkHelper(uuidIDArray[1],path,uuidObj,match.groups.UserText);
+                                linkMap.set(match[0],wikiLink);
+                                //linkMap.set(match[0],'[['+path+'/'+makeStringSafe(uuidObj.name)+'#'+match.groups.UserText+'|'+match.groups.UserText+']]');
+                            }
                         }
-                        else{
-                            let path = 'JournalEntry';
-                            linkMap.set(match[0],'[['+path+'/'+makeStringSafe(uuidObj.name)+'#'+match.groups.UserText+'|'+match.groups.UserText+']]');
-                        }
-                    }
-                    if(uuidArray[0]== 'Compendium'){
-                        //probably need to do something here to link to the header in the compendium page
-                    }
-                }
-                else{
-                    let uuidArray = uuidString.split('.');
-                    let uuidObj = await fromUuid(uuidString);
-                    if(uuidArray[0] == 'JournalEntry' || uuidArray[0] == 'Actor' || uuidArray[0] == 'RollTable' || uuidArray[0] == 'Scene' || uuidArray[0] == 'Item' ){
-                        let newLinkText = await MDLinkHelper(uuidObj,foldermap,journalPageObj,match,match.groups.UserText,uuidArray[0],preworldpath);
-                        if(newLinkText != null){
-                            linkMap.set(match[0],newLinkText);
-                        }
-                    }
-                    else{
-                        if(uuidArray[0] == 'Compendium'){
+                        if(uuidArray[0]== 'Compendium'){
                             let path = uuidArray[0] + '/' + uuidArray[1] + '/' + uuidArray[2];
+                            wikiLink = await headerLinkHelper(uuidIDArray[1],path,uuidObj,match.groups.UserText);
+                            linkMap.set(match[0],wikiLink);
+                            //linkMap.set(match[0], '[['+path+'/'+makeStringSafe(uuidObj.name)+'#'+match.groups.UserText+'|'+match.groups.UserText+']]');
                             let compUuidObjType = await game.packs.get(uuidArray[1]+'.'+uuidArray[2]).metadata.type;
-                            let linktext = await MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(uuidObj.name),isWiki);
-                            linkMap.set(match[0],linktext);//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(uuidObj.name).replace(/\s+/g, '%20')+'.md)');
                             compendiumObjectsToCreate.push(
                                 {
                                     type: compUuidObjType,
                                     UUID: uuidObj.uuid
                                 });
                         }
+                    }
+                    else{
+                        Logger.logError(`Document ${uuidIDArray[0]} in ${match.groups.DocID} was not found, its link in the document may be broken.  It will not be handled or exported.`);
+                    }
+                }
+                else{
+                    let uuidArray = uuidString.split('.');
+                    let uuidObj = await fromUuid(uuidString);
+                    if(uuidObj != undefined){
+                        if(uuidArray[0] == 'JournalEntry' || uuidArray[0] == 'Actor' || uuidArray[0] == 'RollTable' || uuidArray[0] == 'Scene' || uuidArray[0] == 'Item' ){
+                            let newLinkText = await MDLinkHelper(uuidObj,foldermap,journalPageObj,match,match.groups.UserText,uuidArray[0],preworldpath);
+                            if(newLinkText != null){
+                                linkMap.set(match[0],newLinkText);
+                            }
+                        }
+                        else{
+                            if(uuidArray[0] == 'Compendium'){
+                                let path = uuidArray[0] + '/' + uuidArray[1] + '/' + uuidArray[2];
+                                let compUuidObjType = await game.packs.get(uuidArray[1]+'.'+uuidArray[2]).metadata.type;
+                                let linktext = await MDLinkType(match.groups.UserText,preworldpath,path,makeStringSafe(uuidObj.name),isWiki);
+                                linkMap.set(match[0],linktext);//'['+match.groups.UserText+']('+preworldpath+'/'+path+'/'+makeStringSafe(uuidObj.name).replace(/\s+/g, '%20')+'.md)');
+                                compendiumObjectsToCreate.push(
+                                    {
+                                        type: compUuidObjType,
+                                        UUID: uuidObj.uuid
+                                    });
+                            }
+                        }
+                    }
+                    else{
+                        Logger.logError(`Document ${uuidArray[0]} in ${match.groups.DocID} was not found, its link in the document may be broken.  It will not be handled or exported.`);
                     }
                     Logger.log(uuidArray);
                 }
@@ -275,6 +318,28 @@ export async function convertFVTTJnlLinksToMDLinksRefactor(journalContent,journa
     return outgoingStr;
     //console.log(outgoingStr);
     ///iterate through map and then str replace all links with the appropriate ids
+}
+
+//this function takes in information from a link that is linking to a header specifically, this is a new feature of FVTT v10.
+//it should be noted that if this is a v10.285 or earlier slug where the words were just concatenated and the user has modified the user text it will output a "broken" link within the exported markdown.
+//example of this type of link =  @UUID[JournalEntry.i0UPs1SvUDwQkGye.JournalEntryPage.lSUKtoIsGOyEvb5W#4BridgeFloor]{area 4}  
+//It is impossible to solve for this unless we dig through the JournalEntryPage._element for the HTML anchors where the slugified data is stored in sub collections, however this is less than ideal and any
+//change made to the way the HTML is structured by FVTT would potentially cause a fatal break, since this is such an edge case we are currently comfortable with not handling this type of "break" and letting the end user deal with it
+//unfortunately we have no way of knowing if the link will be "broken" so we can't alert the user to the potential other than noting this in documentation.
+async function headerLinkHelper(slugifiedHeader,path,uuidObj,usertext){
+    let link = '';
+    if(slugifiedHeader.includes(' ')){ // handles header links like this where user defined text is not actually the header: @UUID[Compendium.dnd5e.rules.0AGfrwZRzSG0vNKb.JournalEntryPage.xt6tSGvU9e0vtXw6#Intelligence Checks]{Investigation}
+        link = '[['+path+'/'+makeStringSafe(uuidObj.name)+'#'+slugifiedHeader+'|'+usertext+']]';
+    }
+    else{
+        if(slugifiedHeader.includes('-')){ // handles header links like this where user defined text is the same or different and it is using a v10.286+ slugify on the link after the # @UUID[Compendium.dnd5e.rules.0AGfrwZRzSG0vNKb.JournalEntryPage.OcHhrKKzffcVi03Q#group-checks]{Group Checks}
+            link = '[['+path+'/'+makeStringSafe(uuidObj.name)+'#'+slugifiedHeader.replaceAll('-',' ')+'|'+usertext+']]';
+        }
+        else{ //fall back in case it is a v10.285 or earlier slugify but the user text is correct to the header we are trying to link to @UUID[JournalEntry.GzFr880LIgxWfEIq.JournalEntryPage.AXigaOPwvQgBKeoG#RightintotheAction]{Right into the Action}
+            link = '[['+path+'/'+makeStringSafe(uuidObj.name)+'#'+usertext+'|'+usertext+']]';
+        }
+    }
+    return link; //linkMap.set(match[0],'[['+path+'/'+makeStringSafe(uuidObj.name)+'#'+match.groups.UserText+'|'+match.groups.UserText+']]');
 }
 
 //This function will handle taking content and then going through and replacing all the links with the appropriate Markdown style link format

@@ -6,6 +6,8 @@
     "better-markdown-sync.FoundryInstallSourcePath.Hint": "This should be the complete path to Foundry's app/public folder this is used for image resolution in documents for any image that is taken from Foundry's image library.  The default is an example of a windows install path depending on how you have foundry installed this may change but the path should include the full path from the root either 'C' or 'home' and end with the 'public' folder.",
     "better-markdown-sync.FoundryDataSourcePath.Name": "Foundry Data Folder Location",
     "better-markdown-sync.FoundryDataSourcePath.Hint": "This should be the complete path to Foundry's user data folder this can be found in the Foundry administration screen under the configuration tab and is the 'User Data Path'",
+    "better-markdown-sync.SSHMappedDrive.Name": "[Advanced] SSH Mapped Drive Prefix",
+    "better-markdown-sync.SSHMappedDrive.Hint": "If you are using a ssh mapping to connect to your markdown vault you can place the folder or drive letter (Windows) like 'z:' this is used for absolute linking of images that are embedded in the generated files so that if the images exist outside of the 'world' folder they will still render.",
     "better-markdown-sync.ImportWorldPath.Name": "[Advanced] Import World Path",
     "better-markdown-sync.ImportWorldPath.Hint": "The world path relative to the Markdown Source Path to import from. Defaults to game name.",
     "better-markdown-sync.ExportWorldPath.Name": "[Advanced] Export World Path",

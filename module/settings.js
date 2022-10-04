@@ -57,6 +57,14 @@ const settings = [
     onChange: fetchParams
   },
   {
+    name: "SSHMappedDrive",
+    scope: "world",
+    default: "",
+    type: String,
+    requiresreload: false,
+    onChange: fetchParams
+  },
+  {
     name: "JournalEditorLink",
     scope: "world",
     default: "",

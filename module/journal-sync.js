@@ -356,7 +356,8 @@ async function startExportSingleJournal(){
     Logger.log(folder_map);
 
         //may need a check here for a hedding # identifier?  Not sure if we are cleaning this before this step
-        let jpObj = await game.journal.get("GzFr880LIgxWfEIq");
+        //let jpObj = await game.journal.get("GzFr880LIgxWfEIq"); - ONPREM
+        let jpObj = await game.journal.get("lSUKtoIsGOyEvb5W"); //oracle
         console.log(jpObj);
         let singlejp = await journalV10prep(jpObj,folder_map,false);
         for(let i=0;i<singlejp.length;i++){
@@ -528,9 +529,16 @@ async function startExportItems(){
 //Due to the way that we process folders in other functions if a particular Document Type has no folders but has items all the
 //items will have a "null" folder and no top level folder will be created to hold those "folder-less" documents
 async function topLevelFolderCreate(){
-    let TOP_FOLDER_ARRAY = ['JournalEntry','Actor','Item','Scene','RollTable','Compendium'];
+    let TOP_FOLDER_ARRAY = [
+        validExportWorldPath()+'JournalEntry',
+        validExportWorldPath()+'Actor',
+        validExportWorldPath()+'Item',
+        validExportWorldPath()+'Scene',
+        validExportWorldPath()+'RollTable',
+        validExportWorldPath()+'Compendium'
+    ];
     for(let i=0;i<TOP_FOLDER_ARRAY.length;i++){
-        exportFolderPathString(TOP_FOLDER_ARRAY[i],validMarkdownSourcePath()+validExportWorldPath(),markdownPathOptions);
+        exportFolderPathString(TOP_FOLDER_ARRAY[i],validMarkdownSourcePath(),markdownPathOptions);
     }
 }
 
