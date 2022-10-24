@@ -152,76 +152,78 @@ export async function readyModule() {
     });
 
     Hooks.on("getSceneControlButtons", (controls) => {
-        let group = controls.find(b => b.name == "notes")
-        group.tools.push({
-            name: "import",
-            title: "Import Journals",
-            icon: "fas fa-file-import",
-            onClick: () => {
-                startImport();
-            },
-            button: true
-        });
-        group.tools.push({
-            name: "export",
-            title: "Export Journals",
-            icon: "fas fa-file-export",
-            onClick: () => {
-                startExport();
-            },
-            button: true,
-        });
-        group.tools.push({
-            name: "BMD",
-            title: "BMD TEST",
-            icon: "fas fa-file-export",
-            onClick: () => {
-                topLevelFolderCreate();
-                startExportAllJournals();
-            },
-            button: true,
-        });
-
-        group.tools.push({
-            name: "BMDActor",
-            title: "Actor Test",
-            icon: "fas fa-file-export",
-            onClick: () => {
-                startExportActors();
-            },
-            button: true,
-        });
-
-        group.tools.push({
-            name: "BMDItems",
-            title: "Item Test",
-            icon: "fas fa-file-export",
-            onClick: () => {
-                startExportItems();
-            },
-            button: true,
-        });
-
-        group.tools.push({
-            name: "BMDSingleJournal",
-            title: "Single Journal Test",
-            icon: "fas fa-file-export",
-            onClick: () => {
-                startExportSingleJournal();
-            },
-            button: true,
-        });
-
-        if (journalEditorLink != "") {
+        if(game.user.isGM){
+            let group = controls.find(b => b.name == "notes")
             group.tools.push({
-                name: "edit",
-                title: "Edit Journals",
-                icon: "fas fa-edit",
+                name: "import",
+                title: "Import Journals",
+                icon: "fas fa-file-import",
                 onClick: () => {
-                    window.open(journalEditorLink, "_blank");
+                    startImport();
+                },
+                button: true
+            });
+            group.tools.push({
+                name: "export",
+                title: "Export Journals",
+                icon: "fas fa-file-export",
+                onClick: () => {
+                    startExport();
                 },
                 button: true,
             });
+            group.tools.push({
+                name: "BMD",
+                title: "BMD TEST",
+                icon: "fas fa-file-export",
+                onClick: () => {
+                    topLevelFolderCreate();
+                    startExportAllJournals();
+                },
+                button: true,
+            });
+
+            group.tools.push({
+                name: "BMDActor",
+                title: "Actor Test",
+                icon: "fas fa-file-export",
+                onClick: () => {
+                    startExportActors();
+                },
+                button: true,
+            });
+
+            group.tools.push({
+                name: "BMDItems",
+                title: "Item Test",
+                icon: "fas fa-file-export",
+                onClick: () => {
+                    startExportItems();
+                },
+                button: true,
+            });
+
+            group.tools.push({
+                name: "BMDSingleJournal",
+                title: "Single Journal Test",
+                icon: "fas fa-file-export",
+                onClick: () => {
+                    startExportSingleJournal();
+                },
+                button: true,
+            });
+
+            if (journalEditorLink != "") {
+                group.tools.push({
+                    name: "edit",
+                    title: "Edit Journals",
+                    icon: "fas fa-edit",
+                    onClick: () => {
+                        window.open(journalEditorLink, "_blank");
+                    },
+                    button: true,
+                });
+            }
         }
     });
 }

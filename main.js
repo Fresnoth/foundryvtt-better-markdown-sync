@@ -9,13 +9,13 @@ import BMDSync from './module/better-md.js';
 /* Initialize module					*/
 /* ------------------------------------ */
 Hooks.once('init', async function () {
-    Logger.log(`Initializing ${Constants.MODULE_NAME}`);
-    Logger.log("    ___                       _    __,               ");
-    Logger.log("   ( /                       //   (                  ");
-    Logger.log("    / __ , , _   _ _   __,  //     `.  __  , _ _   _,");
-    Logger.log("  _/_(_)(_/_/ (_/ / /_(_/(_(/_---(___)/ (_/_/ / /_(__");
-    Logger.log(" //                                      /           ");
-    Logger.log("(/                                      '            ");
+    //Logger.log(`Initializing ${Constants.MODULE_NAME}`);
+    //Logger.log("    ___                       _    __,               ");
+    //Logger.log("   ( /                       //   (                  ");
+    //Logger.log("    / __ , , _   _ _   __,  //     `.  __  , _ _   _,");
+    //Logger.log("  _/_(_)(_/_/ (_/ / /_(_/(_(/_---(___)/ (_/_/ / /_(__");
+    //Logger.log(" //                                      /           ");
+    //Logger.log("(/                                      '            ");
     Logger.log("____ ____ ____ ____ ____ ____                      ");
     Logger.log("||B |||E |||T |||T |||E |||R ||                    ");
     Logger.log("||__|||__|||__|||__|||__|||__||                    ");
@@ -57,7 +57,7 @@ Hooks.once('ready', async function () {
 
 // Add any additional hooks if necessary
 Hooks.on("renderSidebarTab", async (app, html) =>{ 
-    Logger.log("sidebar was rendered");
+    //Logger.log("sidebar was rendered");
     if (app.options.id == "journal" && game.user.isGM) {
     let button = $("<div class='header-actions action-buttons flexrow'><button><i class='fas fa-user-robot'></i> Better Markdown Sync</button></div>");
 
